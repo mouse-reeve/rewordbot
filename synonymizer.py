@@ -2,39 +2,37 @@
 import random
 import re
 import settings
-from TwitterAPI import TwitterAPI
 from wordnik.swagger import ApiClient
 from wordnik.WordApi import WordApi
 
+def reword(text):
+    ''' replace words with synonyms '''
 
-sentence = 'I love to talk about nothing. ' \
-           'It\'s the only thing I know anything about.'
+    # tokenize
+    tokens = text.split(' ')
 
-twitter_api = TwitterAPI(settings.TWITTER_API_KEY,
-                         settings.TWITTER_API_SECRET,
-                         settings.TWITTER_ACCESS_TOKEN,
-                         settings.TWITTER_ACCESS_SECRET)
+    # find synonyms
+    client = ApiClient(settings.WORDNIK_API_KEY, 'http://api.wordnik.com/v4')
+    wordnik_api = WordApi(client)
 
-# tokenize
-tokens = sentence.split(' ')
+    reworded = []
+    for word in tokens:
+        word = re.sub(r'[\.,\?!]', '', word)
 
-# find synonyms
-client = ApiClient(settings.WORDNIK_API_KEY, 'http://api.wordnik.com/v4')
-wordnik_api = WordApi(client)
+        results = wordnik_api.getRelatedWords(word, useCanonical=True,
+                                              relationshipTypes='synonym')
+        try:
+            options = results[0].words
+            reworded.append(random.choice(options))
+        except TypeError:
+            reworded.append(word)
 
-reworded = []
-for word in tokens:
-    word = re.sub(r'[\.,\?!]', '', word)
+    # restructure text
+    return ' '.join(reworded)
 
-    results = wordnik_api.getRelatedWords(word, useCanonical=True,
-                                          relationshipTypes='synonym')
-    try:
-        options = results[0].words
-        reworded.append(random.choice(options))
-    except TypeError:
-        reworded.append(word)
 
-# restructure text
-print ' '.join(reworded)
+if __name__ == '__main__':
+    sentence = 'I love to talk about nothing. ' \
+               'It\'s the only thing I know anything about.'
+    print reword(sentence)
 
-# tweet
