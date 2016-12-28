@@ -2,6 +2,7 @@
 import random
 import re
 import settings
+import time
 from wordnik.swagger import ApiClient
 from wordnik.WordApi import WordApi
 
@@ -11,6 +12,7 @@ def reword(text):
     ''' replace words with synonyms '''
 
     # tokenize
+    text = re.sub(r'([A-z])-([A-z])', r'\1 \2', text)
     tokens = text.split(' ')
 
     # find synonyms
@@ -33,7 +35,7 @@ def reword(text):
             results = wordnik_api.getRelatedWords(word, useCanonical=True,
                                                   relationshipTypes='synonym')
             try:
-                wordcache[word] = results[0].words + word
+                wordcache[word] = results[0].words + [word]
             except TypeError:
                 # presumably, no synonyms found, just use the original word
                 wordcache[word] = [word]
@@ -55,6 +57,7 @@ def reword(text):
             new_word += original[-1]
 
         reworded.append(new_word)
+        time.sleep(1)
 
     # restructure text
     return ' '.join(reworded)
