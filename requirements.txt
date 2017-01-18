@@ -1,2 +1,4 @@
+nltk==3.0.1
+numpy==1.9.1
 TwitterAPI==2.4.2
 wordnik==2.1.3

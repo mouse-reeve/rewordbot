@@ -1,4 +1,5 @@
 ''' reword bot '''
+from nltk import pos_tag, word_tokenize
 import random
 import re
 import settings
@@ -13,39 +14,46 @@ wordnik_api = WordApi(client)
 def reword(text):
     ''' replace words with synonyms '''
 
-    # tokenize
-    text = re.sub(r'([A-z])-([A-z])', r'\1 \2', text)
-    tokens = text.split(' ')
+    # tokenization and part of speech taggin
+    tokens = pos_tag(word_tokenize(text))
+    print tokens
 
     # find synonyms
     reworded = []
-    for original in tokens:
-        # remove non alphanumeric characters
-        word = re.sub(r'\W', '', original)
-        word = word.lower()
+    for token in tokens:
+        word, pos = token
+        original = word
 
-        if not word:
-            # probably it's a bit of punctuation or emoji or something
-            reworded.append(original)
-            continue
+        # only convert nouns, verbs, and adjectives
+        if re.match(r'NN|VB|JJ', pos):
+            # remove non alphanumeric characters
+            word = re.sub(r'\W', '', token[0])
+            word = word.lower()
 
-        # find synonyms
-        new_word = get_synonym(word)
+            if not word:
+                # probably it's a bit of punctuation or emoji or something
+                reworded.append(original)
+                continue
 
-        # restore formatting
-        if len(original) > 1 and re.match(r'^[A-Z]+$', original):
-            # all caps
-            new_word = new_word.upper()
-        elif re.match(r'^[A-Z]', original):
-            # first letter cap
-            new_word = new_word[0].upper() + new_word[1:]
-        # any other capitalization patterns can lump it
+            # find synonyms
+            new_word = get_synonym(word)
 
-        # real janky punctuation restoration
-        if re.match(r'^[\"\']', original):
-            new_word = original[0] + new_word
-        if re.match(r'[\"\'\.,;?!]', original[-1]):
-            new_word += original[-1]
+            # restore formatting
+            if len(original) > 1 and re.match(r'^[A-Z]+$', original):
+                # all caps
+                new_word = new_word.upper()
+            elif re.match(r'^[A-Z]', original):
+                # first letter cap
+                new_word = new_word[0].upper() + new_word[1:]
+            # any other capitalization patterns can lump it
+
+            # real janky punctuation restoration
+            if re.match(r'^[\"\']', original):
+                new_word = original[0] + new_word
+            if re.match(r'[\"\'\.,;?!]', original[-1]):
+                new_word += original[-1]
+        else:
+            new_word = word
 
         reworded.append(new_word)
 
@@ -62,7 +70,7 @@ def get_synonym(word):
         try:
             wordcache[word] = results[0].words + [word]
         except TypeError:
-            # presumably, no synonyms found, just use the original word
+            # presumably, no synonyms found, just use the token word
             wordcache[word] = [word]
     return random.choice(wordcache[word])
 
