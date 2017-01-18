@@ -7,6 +7,8 @@ from wordnik.swagger import ApiClient
 from wordnik.WordApi import WordApi
 
 wordcache = {}
+client = ApiClient(settings.WORDNIK_API_KEY, 'http://api.wordnik.com/v4')
+wordnik_api = WordApi(client)
 
 def reword(text):
     ''' replace words with synonyms '''
@@ -16,9 +18,6 @@ def reword(text):
     tokens = text.split(' ')
 
     # find synonyms
-    client = ApiClient(settings.WORDNIK_API_KEY, 'http://api.wordnik.com/v4')
-    wordnik_api = WordApi(client)
-
     reworded = []
     for original in tokens:
         # remove non alphanumeric characters
@@ -31,15 +30,7 @@ def reword(text):
             continue
 
         # find synonyms
-        if word not in wordcache:
-            results = wordnik_api.getRelatedWords(word, useCanonical=True,
-                                                  relationshipTypes='synonym')
-            try:
-                wordcache[word] = results[0].words + [word]
-            except TypeError:
-                # presumably, no synonyms found, just use the original word
-                wordcache[word] = [word]
-        new_word = random.choice(wordcache[word])
+        new_word = get_synonym(word)
 
         # restore formatting
         if len(original) > 1 and re.match(r'^[A-Z]+$', original):
@@ -57,15 +48,26 @@ def reword(text):
             new_word += original[-1]
 
         reworded.append(new_word)
-        time.sleep(1)
 
     # restructure text
     return ' '.join(reworded)
+
+
+def get_synonym(word):
+    ''' lookup synonyms for a word in cache or from api '''
+    if word not in wordcache:
+        results = wordnik_api.getRelatedWords(word, useCanonical=True,
+                                              relationshipTypes='synonym')
+        time.sleep(0.5)
+        try:
+            wordcache[word] = results[0].words + [word]
+        except TypeError:
+            # presumably, no synonyms found, just use the original word
+            wordcache[word] = [word]
+    return random.choice(wordcache[word])
 
 
 if __name__ == '__main__':
     sentence = 'I love to talk about nothing. ' \
                'It\'s the only thing I know anything about.'
     print reword(sentence)
-    # Ego nothing extent speak nearly a. Its the preeminent
-    # something Ego ane anywise near.
