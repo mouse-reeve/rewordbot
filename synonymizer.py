@@ -24,36 +24,30 @@ def reword(text):
         word, pos = token
         original = word
 
-        # only convert nouns, verbs, and adjectives
-        if re.match(r'NN|VB|JJ', pos):
-            # remove non alphanumeric characters
-            word = re.sub(r'\W', '', token[0])
-            word = word.lower()
+        # only convert nouns, verbs, and adjs, and check for if it's a word
+        if not re.match(r'NN|VB|JJ', pos) or not re.sub(r'\W', '', token[0]):
+            reworded.append(original)
+            continue
 
-            if not word:
-                # probably it's a bit of punctuation or emoji or something
-                reworded.append(original)
-                continue
+        word = word.lower()
 
-            # find synonyms
-            new_word = get_synonym(word)
+        # find synonyms
+        new_word = get_synonym(word)
 
-            # restore formatting
-            if len(original) > 1 and re.match(r'^[A-Z]+$', original):
-                # all caps
-                new_word = new_word.upper()
-            elif re.match(r'^[A-Z]', original):
-                # first letter cap
-                new_word = new_word[0].upper() + new_word[1:]
-            # any other capitalization patterns can lump it
+        # restore formatting
+        if len(original) > 1 and re.match(r'^[A-Z]+$', original):
+            # all caps
+            new_word = new_word.upper()
+        elif re.match(r'^[A-Z]', original):
+            # first letter cap
+            new_word = new_word[0].upper() + new_word[1:]
+        # any other capitalization patterns can lump it
 
-            # real janky punctuation restoration
-            if re.match(r'^[\"\']', original):
-                new_word = original[0] + new_word
-            if re.match(r'[\"\'\.,;?!]', original[-1]):
-                new_word += original[-1]
-        else:
-            new_word = word
+        # real janky punctuation restoration
+        if re.match(r'^[\"\']', original):
+            new_word = original[0] + new_word
+        if re.match(r'[\"\'\.,;?!]', original[-1]):
+            new_word += original[-1]
 
         reworded.append(new_word)
 
