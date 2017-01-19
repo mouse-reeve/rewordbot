@@ -1,4 +1,5 @@
 ''' reword bot '''
+import argparse
 import json
 from nltk import pos_tag, word_tokenize
 import random
@@ -10,20 +11,22 @@ from wordnik.WordApi import WordApi
 
 class Reword(object):
     ''' functionality for rewording text with synonyms '''
-    client = ApiClient(settings.WORDNIK_API_KEY, 'http://api.wordnik.com/v4')
-    wordnik_api = WordApi(client)
 
-    def __init__(self):
-        try:
-            self.wordcache = json.loads(open('thesaurus.json').read())
-        except IOError:
-            self.wordcache = {}
+    def __init__(self, show_tokens):
+        client = ApiClient(settings.WORDNIK_API_KEY,
+                           'http://api.wordnik.com/v4')
+        self.wordnik_api = WordApi(client)
+        self.show_tokens = show_tokens
+        self.wordcache = json.load(open('thesaurus.json'))
+
 
     def reword(self, text):
         ''' update words in a block of text'''
 
         # tokenization and part of speech taggin
         tokens = pos_tag(word_tokenize(text))
+        if self.show_tokens:
+            print tokens
 
         # find synonyms
         reworded = []
@@ -54,7 +57,7 @@ class Reword(object):
             reworded.append(new_word)
 
         # dump thesaurus
-        with open('thesuarus.json', 'w') as outfile:
+        with open('thesaurus.json', 'w') as outfile:
             json.dump(self.wordcache, outfile)
 
         # restructure text
@@ -77,6 +80,19 @@ class Reword(object):
 
 
 if __name__ == '__main__':
-    sentence = 'I love to talk about nothing. ' \
-               'It\'s the only thing I know anything about.'
-    print Reword().reword(sentence)
+    parser = argparse.ArgumentParser(description='reword text with a thesaurus')
+    parser.add_argument('--text', '-t',
+                        help='text string to be improved')
+    parser.add_argument('--file', '-f',
+                        help='filename of text file to be improved')
+    parser.add_argument('--show_tokens', '-s',
+                        help='print tokenized and pos tagged text')
+    args = parser.parse_args()
+    if args.file:
+        input_text = open(args.file).read()
+    elif args.text:
+        input_text = args.text
+    else:
+        input_text = 'I love to talk about nothing. ' \
+              'It\'s the only thing I know anything about.'
+    print Reword(show_tokens=args.show_tokens).reword(input_text)
