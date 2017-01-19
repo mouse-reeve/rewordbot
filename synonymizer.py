@@ -56,12 +56,16 @@ class Reword(object):
 
             reworded.append(new_word)
 
-        # dump thesaurus
+        # save thesaurus to file
         with open('thesaurus.json', 'w') as outfile:
             json.dump(self.wordcache, outfile)
 
         # restructure text
-        return ' '.join(reworded)
+        text = ' '.join(reworded)
+
+        # TODO: remove spaces around punctuation tokens
+
+        return text
 
 
     def get_synonym(self, word):
@@ -70,6 +74,8 @@ class Reword(object):
             results = self.wordnik_api.getRelatedWords(
                 word, useCanonical=True,
                 relationshipTypes='synonym')
+
+            # api politeness -- wait 1/2 a second between queries
             time.sleep(0.5)
             try:
                 self.wordcache[word] = results[0].words + [word]
@@ -95,4 +101,5 @@ if __name__ == '__main__':
     else:
         input_text = 'I love to talk about nothing. ' \
               'It\'s the only thing I know anything about.'
+
     print Reword(show_tokens=args.show_tokens).reword(input_text)
