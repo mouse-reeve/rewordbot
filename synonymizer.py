@@ -1,7 +1,7 @@
 ''' reword bot '''
 import argparse
 import json
-from pattern.en import conjugate, lemma, parse
+from pattern.en import conjugate, lemma, parse, pluralize, singularize
 import random
 import re
 import settings
@@ -46,12 +46,21 @@ class Reword(object):
             # symbols longer than 2 chars)
             if len(pos) > 2:
                 word = lemma(word)
+
+            # singularize
+            if pos in ['NNS', 'NNPS']:
+                word = singularize(word)
+
             # find synonyms
             new_word = self.get_synonym(word)
 
             # restore verb conjugation
             if 'VB' in pos and not pos == 'VB':
                 new_word = conjugate(new_word, pos)
+
+            # restore plurals
+            if pos in ['NNS', 'NNPS']:
+                new_word = pluralize(new_word)
 
             # restore formatting
             if len(original) > 1 and re.match(r'^[A-Z]+$', original):
