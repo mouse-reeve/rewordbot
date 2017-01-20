@@ -12,7 +12,7 @@ from wordnik.WordApi import WordApi
 class Reword(object):
     ''' functionality for rewording text with synonyms '''
 
-    def __init__(self, show_tokens):
+    def __init__(self, show_tokens=False):
         client = ApiClient(settings.WORDNIK_API_KEY,
                            'http://api.wordnik.com/v4')
         self.wordnik_api = WordApi(client)
