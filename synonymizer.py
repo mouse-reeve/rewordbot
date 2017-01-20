@@ -64,6 +64,7 @@ class Reword(object):
         text = ' '.join(reworded)
 
         # TODO: remove spaces around punctuation tokens
+        text = re.sub(r'\s([\'\.,\?!])', r'\1', text)
 
         return text
 
