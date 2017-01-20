@@ -1,7 +1,7 @@
 ''' reword bot '''
 import argparse
 import json
-from nltk import pos_tag, word_tokenize
+from pattern.en import conjugate, lemma, parse
 import random
 import re
 import settings
@@ -24,7 +24,7 @@ class Reword(object):
         ''' update words in a block of text'''
 
         # tokenization and part of speech taggin
-        tokens = pos_tag(word_tokenize(text))
+        tokens = [l.split('/')[:2] for l in parse(text).split(' ')]
         if self.show_tokens:
             print tokens
 
@@ -42,8 +42,16 @@ class Reword(object):
 
             word = word.lower()
 
+            # lemmatize non-base words (generalized here as penn treebank
+            # symbols longer than 2 chars)
+            if len(pos) > 2:
+                word = lemma(word)
             # find synonyms
             new_word = self.get_synonym(word)
+
+            # restore verb conjugation
+            if 'VB' in pos and not pos == 'VB':
+                new_word = conjugate(new_word, pos)
 
             # restore formatting
             if len(original) > 1 and re.match(r'^[A-Z]+$', original):
