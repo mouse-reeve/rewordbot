@@ -40,47 +40,22 @@ class Reword(object):
                 reworded.append(original)
                 continue
 
-            word = word.lower()
-
-            # lemmatize non-base words (generalized here as penn treebank
-            # symbols longer than 2 chars)
-            if len(pos) > 2:
-                word = lemma(word)
-
-            # singularize
-            if pos in ['NNS', 'NNPS']:
-                word = singularize(word)
+            word = strip_word(word, pos)
 
             # find synonyms
             new_word = self.get_synonym(word)
 
-            # restore verb conjugation
-            if 'VB' in pos and not pos == 'VB':
-                new_word = conjugate(new_word, pos)
-
-            # restore plurals
-            if pos in ['NNS', 'NNPS']:
-                new_word = pluralize(new_word)
-
-            # restore formatting
-            if len(original) > 1 and re.match(r'^[A-Z]+$', original):
-                # all caps
-                new_word = new_word.upper()
-            elif re.match(r'^[A-Z]', original):
-                # first letter cap
-                new_word = new_word[0].upper() + new_word[1:]
-            # any other capitalization patterns can lump it
-
+            new_word = reform_word(original, new_word, pos)
             reworded.append(new_word)
 
-        # save thesaurus to file
+        # save updated thesaurus to file
         with open('thesaurus.json', 'w') as outfile:
             json.dump(self.wordcache, outfile)
 
         # restructure text
         text = ' '.join(reworded)
 
-        # TODO: remove spaces around punctuation tokens
+        # remove spaces around punctuation tokens
         text = re.sub(r'\s([\'\.,\?!])', r'\1', text)
 
         return text
@@ -101,6 +76,43 @@ class Reword(object):
                 # presumably, no synonyms found, just use the token word
                 self.wordcache[word] = [word]
         return random.choice(self.wordcache[word])
+
+
+def strip_word(word, pos):
+    ''' find lemmas/base forms for words '''
+    word = word.lower()
+
+    # lemmatize non-base words (generalized here as penn treebank
+    # symbols longer than 2 chars)
+    if len(pos) > 2:
+        word = lemma(word)
+
+    # singularize
+    if pos in ['NNS', 'NNPS']:
+        word = singularize(word)
+
+    return word
+
+
+def reform_word(original, word, pos):
+    ''' decline the newly found synonym '''
+    # restore verb conjugation
+    if 'VB' in pos and not pos == 'VB':
+        word = conjugate(word, pos)
+
+    # restore plurals
+    if pos in ['NNS', 'NNPS']:
+        word = pluralize(word)
+
+    # restore caps
+    if len(original) > 1 and re.match(r'^[A-Z]+$', original):
+        # all caps
+        word = word.upper()
+    elif re.match(r'^[A-Z]', original):
+        # first letter cap
+        word = word[0].upper() + word[1:]
+    # any other capitalization patterns can lump it
+    return word
 
 
 if __name__ == '__main__':
