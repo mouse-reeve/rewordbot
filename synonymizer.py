@@ -1,7 +1,8 @@
 ''' reword bot '''
 import argparse
 import json
-from pattern.en import conjugate, lemma, parse, pluralize, singularize
+from nltk import pos_tag, word_tokenize
+from pattern.en import conjugate, lemma, pluralize, singularize
 import random
 import re
 import settings
@@ -23,8 +24,12 @@ class Reword(object):
     def reword(self, text):
         ''' update words in a block of text'''
 
+        text = text.decode('utf-8')
+
         # tokenization and part of speech taggin
-        tokens = [l.split('/')[:2] for l in parse(text).split(' ')]
+        # the pattern pos tagger was dropping the first words in each
+        # sentence after the first one
+        tokens = pos_tag(word_tokenize(text))
         if self.show_tokens:
             print tokens
 
@@ -58,7 +63,7 @@ class Reword(object):
         # remove spaces around punctuation tokens
         text = re.sub(r'\s([\'\.,\?!])', r'\1', text)
 
-        return text
+        return text.encode('utf-8', 'ignore')
 
 
     def get_synonym(self, word):
