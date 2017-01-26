@@ -13,11 +13,12 @@ from wordnik.WordApi import WordApi
 class Reword(object):
     ''' functionality for rewording text with synonyms '''
 
-    def __init__(self, show_tokens=False):
+    def __init__(self, show_tokens=False, include_all=False):
         client = ApiClient(settings.WORDNIK_API_KEY,
                            'http://api.wordnik.com/v4')
         self.wordnik_api = WordApi(client)
         self.show_tokens = show_tokens
+        self.include_all = include_all
         self.wordcache = json.load(open('thesaurus.json'))
 
 
@@ -48,10 +49,18 @@ class Reword(object):
             word = strip_word(word, pos)
 
             # find synonyms
-            new_word = self.get_synonym(word)
+            new_words = self.get_synonym(word)
 
-            new_word = reform_word(original, new_word, pos)
-            reworded.append(new_word)
+            # only rebuild the word if it might not be the original
+            if len(new_words) == 1:
+                reworded.append(original)
+                continue
+
+            if not self.include_all:
+                new_words = [random.choice(new_words)]
+
+            new_words = [reform_word(original, w, pos)  for w in new_words]
+            reworded.append('|'.join(new_words))
 
         # save updated thesaurus to file
         with open('thesaurus.json', 'w') as outfile:
@@ -80,21 +89,21 @@ class Reword(object):
             except TypeError:
                 # presumably, no synonyms found, just use the token word
                 self.wordcache[word] = [word]
-        return random.choice(self.wordcache[word])
+
+        return self.wordcache[word]
 
 
 def strip_word(word, pos):
     ''' find lemmas/base forms for words '''
     word = word.lower()
 
-    # lemmatize non-base words (generalized here as penn treebank
-    # symbols longer than 2 chars)
-    if len(pos) > 2:
-        word = lemma(word)
-
     # singularize
     if pos in ['NNS', 'NNPS']:
         word = singularize(word)
+    # lemmatize non-base words (generalized here as penn treebank
+    # symbols longer than 2 chars)
+    elif len(pos) > 2:
+        word = lemma(word)
 
     return word
 
@@ -126,8 +135,10 @@ if __name__ == '__main__':
                         help='text string to be improved')
     parser.add_argument('--file', '-f',
                         help='filename of text file to be improved')
-    parser.add_argument('--show_tokens', '-s',
+    parser.add_argument('--show_tokens', '-s', action='store_true',
                         help='print tokenized and pos tagged text')
+    parser.add_argument('--include_all', '-i', action='store_true',
+                        help='embed all synonym options in text')
     args = parser.parse_args()
     if args.file:
         input_text = open(args.file).read()
@@ -137,4 +148,5 @@ if __name__ == '__main__':
         input_text = 'I love to talk about nothing. ' \
               'It\'s the only thing I know anything about.'
 
-    print Reword(show_tokens=args.show_tokens).reword(input_text)
+    print Reword(show_tokens=args.show_tokens,
+                 include_all=args.include_all).reword(input_text)
