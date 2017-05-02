@@ -49,7 +49,7 @@ class Reword(object):
             word = strip_word(word, pos)
 
             # find synonyms
-            new_words = self.get_synonym(word)
+            new_words = self.get_synonym(word, original)
 
             # only rebuild the word if it might not be the original
             if len(new_words) == 1:
@@ -75,8 +75,10 @@ class Reword(object):
         return text.encode('utf-8', 'ignore')
 
 
-    def get_synonym(self, word):
+    def get_synonym(self, word, original):
         ''' lookup synonyms for a word in cache or from api '''
+        if word not in self.wordcache and original in self.wordcache:
+            word = original
         if word not in self.wordcache:
             results = self.wordnik_api.getRelatedWords(
                 word, useCanonical=True,
